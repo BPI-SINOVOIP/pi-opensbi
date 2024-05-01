@@ -1,0 +1,45 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+configure)
+    target=""
+    if grep -q '^spacemit' /sys/firmware/devicetree/base/model; then
+        target="spacemit"
+    else
+        exit 0
+    fi
+
+    for x in $(cat /proc/cmdline); do
+        case $x in
+        root=*)
+            ROOT=${x#root=}
+            ;;
+        esac
+    done
+
+    if [ -n $ROOT ]; then
+        case $ROOT in
+        "/dev/mmcblk0"*)
+            OPENSBI=/dev/mmcblk0p3
+            ;;
+        "/dev/mmcblk2"*)
+            OPENSBI=/dev/mmcblk2p3
+            ;;
+        *)
+            echo "Unsupported root=$ROOT"
+            exit 0
+            ;;
+        esac
+    else
+        echo "Missing root= in cmdline"
+        exit 0
+    fi
+
+    if [ -n "$target" ] && [ -e $OPENSBI ]; then
+        dd if=/usr/lib/riscv64-linux-gnu/opensbi/generic/fw_dynamic.itb of=$OPENSBI bs=1 && sync
+    fi
+    ;;
+esac
+
+exit 0

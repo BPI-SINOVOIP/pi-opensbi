@@ -52,6 +52,42 @@ config PLATFORM_STARFIVE_JH7110
 	bool "StarFive JH7110 support"
 	default n
 
+config PLATFORM_SPACEMIT_K1PRO
+	bool "Spacemit K1pro support"
+	default n
+
+if PLATFORM_SPACEMIT_K1PRO
+	config PLATFORM_SPACEMIT_K1PRO_FPGA
+		bool "Spacemit K1pro board fpga"
+		default n
+
+	config PLATFORM_SPACEMIT_K1PRO_QEMU
+		bool "Spacemit K1pro board qemu"
+		default n
+
+	config PLATFORM_SPACEMIT_K1PRO_SIM
+		bool "Spacemit K1pro board sim"
+		default n
+
+	config PLATFORM_SPACEMIT_K1PRO_VERIFY
+		bool "Spacemit K1pro board verify"
+		default n
+endif
+
+config PLATFORM_SPACEMIT_K1X
+	bool "Spacemit K1x support"
+	default n
+
+if PLATFORM_SPACEMIT_K1X
+	config PLATFORM_SPACEMIT_K1X_FPGA
+		bool "Spacemit K1x board fpag"
+		default n
+
+	config PLATFORM_SPACEMIT_K1X_EVB
+		bool "Spacemit K1x board evb"
+		default n
+endif
+
 source "$(OPENSBI_SRC_DIR)/platform/generic/andes/Kconfig"
 
 endif

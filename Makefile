@@ -114,6 +114,7 @@ endif
 CPP		=	$(CC) -E
 AS		=	$(CC)
 DTC		=	dtc
+MKIMAGE =   mkimage
 
 ifneq ($(shell $(CC) --version 2>&1 | head -n 1 | grep clang),)
 CC_IS_CLANG	=	y
@@ -245,6 +246,9 @@ ifdef PLATFORM
 libsbiutils-objs-path-y=$(foreach obj,$(libsbiutils-objs-y),$(platform_build_dir)/lib/utils/$(obj))
 platform-objs-path-y=$(foreach obj,$(platform-objs-y),$(platform_build_dir)/$(obj))
 firmware-bins-path-y=$(foreach bin,$(firmware-bins-y),$(platform_build_dir)/firmware/$(bin))
+firmware-itb-path-y=$(foreach its,$(firmware-its-y),$(platform_build_dir)/firmware/$(basename $(notdir $(its))).itb)
+platform_build_itb_dir=$(patsubst %/,%,$(dir $(firstword $(firmware-itb-path-y))))
+platform_src_its_dir=$(patsubst %/,%,$(platform_src_dir)/$(dir $(firstword $(firmware-its-y))))
 endif
 firmware-elfs-path-y=$(firmware-bins-path-y:.bin=.elf)
 firmware-objs-path-y=$(firmware-bins-path-y:.bin=.o)
@@ -342,7 +346,7 @@ CFLAGS		+=	-fno-omit-frame-pointer -fno-optimize-sibling-calls -mstrict-align
 ifeq ($(CC_SUPPORT_SAVE_RESTORE),y)
 CFLAGS		+=	-mno-save-restore
 endif
-CFLAGS		+=	-mabi=$(PLATFORM_RISCV_ABI) -march=$(PLATFORM_RISCV_ISA)
+CFLAGS		+=	-mabi=$(PLATFORM_RISCV_ABI) -march=$(PLATFORM_RISCV_ISA)_zicbom
 CFLAGS		+=	-mcmodel=$(PLATFORM_RISCV_CODE_MODEL)
 CFLAGS		+=	$(RELAX_FLAG)
 CFLAGS		+=	$(GENFLAGS)
@@ -360,7 +364,7 @@ ASFLAGS		+=	-fno-omit-frame-pointer -fno-optimize-sibling-calls -mstrict-align
 ifeq ($(CC_SUPPORT_SAVE_RESTORE),y)
 ASFLAGS		+=	-mno-save-restore
 endif
-ASFLAGS		+=	-mabi=$(PLATFORM_RISCV_ABI) -march=$(PLATFORM_RISCV_ISA)
+ASFLAGS		+=	-mabi=$(PLATFORM_RISCV_ABI) -march=$(PLATFORM_RISCV_ISA)_zicbom
 ASFLAGS		+=	-mcmodel=$(PLATFORM_RISCV_CODE_MODEL)
 ASFLAGS		+=	$(RELAX_FLAG)
 ifneq ($(CC_IS_CLANG),y)
@@ -468,12 +472,16 @@ compile_carray = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 compile_gen_dep = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 	     echo " GEN-DEP   $(subst $(build_dir)/,,$(1))"; \
 	     echo "$(1:.dep=$(2)): $(3)" >> $(1)
+compile_itb = \
+	     $(CMD_PREFIX)echo " ITB       $(subst $(build_dir)/,,$(1))"; \
+	     $(MKIMAGE) -f $(2) -r $(1)
 
 targets-y  = $(build_dir)/lib/libsbi.a
 ifdef PLATFORM
 targets-y += $(platform_build_dir)/lib/libplatsbi.a
 endif
 targets-y += $(firmware-bins-path-y)
+targets-y += $(firmware-itb-path-y)
 
 # The default "make all" rule
 .PHONY: all
@@ -578,6 +586,11 @@ $(platform_build_dir)/%.dep: $(src_dir)/%.S $(KCONFIG_CONFIG)
 
 $(platform_build_dir)/%.o: $(src_dir)/%.S
 	$(call compile_as,$@,$<)
+
+# Rules for fit image sources
+$(platform_build_itb_dir)/%.itb: $(platform_src_its_dir)/%.its $(firmware-bins-path-y)
+	$(call copy_file,$(dir $@)/$(notdir $<),$<)
+	$(call compile_itb,$@,$(basename $@).its)
 
 # Rule for "make docs"
 $(build_dir)/docs/latex/refman.pdf: $(build_dir)/docs/latex/refman.tex

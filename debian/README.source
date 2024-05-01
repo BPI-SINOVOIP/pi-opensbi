@@ -1,0 +1,7 @@
+Upstream git snapshots are produced with:
+
+  ./debian/bin/git-snapshot COMMIT
+
+Which produces an upstream version based on "git describe" output.
+
+ -- Vagrant Cascadian <vagrant@debian.org>, Thu, 30 May 2019 15:02:49 -0700

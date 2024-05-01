@@ -131,6 +131,11 @@ int uart8250_init(unsigned long base, u32 in_freq, u32 baudrate, u32 reg_shift,
 	/* Set scratchpad */
 	set_reg(UART_SCR_OFFSET, 0x00);
 
+#ifdef CONFIG_PLATFORM_SPACEMIT_K1X
+	/* enable uart. */
+	set_reg(UART_IER_OFFSET, 0x40);
+#endif
+
 	sbi_console_set_device(&uart8250_console);
 
 	return 0;

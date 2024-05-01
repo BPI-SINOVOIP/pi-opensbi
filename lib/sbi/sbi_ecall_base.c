@@ -14,6 +14,9 @@
 #include <sbi/sbi_trap.h>
 #include <sbi/sbi_version.h>
 #include <sbi/riscv_asm.h>
+#if defined(CONFIG_PLATFORM_SPACEMIT_K1PRO) || defined(CONFIG_PLATFORM_SPACEMIT_K1X)
+#include <sbi_utils/cache/cacheflush.h>
+#endif
 
 static int sbi_ecall_base_probe(unsigned long extid, unsigned long *out_val)
 {
@@ -62,6 +65,13 @@ static int sbi_ecall_base_handler(unsigned long extid, unsigned long funcid,
 	case SBI_EXT_BASE_GET_MIMPID:
 		*out_val = csr_read(CSR_MIMPID);
 		break;
+#if defined(CONFIG_PLATFORM_SPACEMIT_K1PRO) || defined(CONFIG_PLATFORM_SPACEMIT_K1X)
+	case SBI_EXT_BASE_FLUSH_CACHE_ALL:
+		csi_flush_dcache_all();
+		/* there has no need to flush l2 cache here */
+		/* csi_flush_l2_cache(); */
+		break;
+#endif
 	case SBI_EXT_BASE_PROBE_EXT:
 		ret = sbi_ecall_base_probe(regs->a0, out_val);
 		break;

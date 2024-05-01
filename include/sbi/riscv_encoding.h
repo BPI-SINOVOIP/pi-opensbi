@@ -708,6 +708,9 @@
 #define CSR_MVIPH			0x319
 #define CSR_MIPH			0x354
 
+#define CSR_TCMCFG			0x5DB
+#define CSR_FEATURECTL			0xbf9
+
 /* ===== Trap/Exception Causes ===== */
 
 #define CAUSE_MISALIGNED_FETCH		0x0

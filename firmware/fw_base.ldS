@@ -96,6 +96,11 @@
 		PROVIDE(_bss_end = .);
 	}
 
+	/DISCARD/ : {
+		*(.eh_frame*)
+		*(.debug*)
+	}
+
 	/* End of the read-write data sections */
 
 	. = ALIGN(0x1000); /* Need this to create proper sections */

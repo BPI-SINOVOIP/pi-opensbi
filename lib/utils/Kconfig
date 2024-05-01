@@ -22,4 +22,13 @@ source "$(OPENSBI_SRC_DIR)/lib/utils/sys/Kconfig"
 
 source "$(OPENSBI_SRC_DIR)/lib/utils/timer/Kconfig"
 
+source "$(OPENSBI_SRC_DIR)/lib/utils/psci/Kconfig"
+
+config ENABLE_LOGGING
+	bool "Enable Logging"
+	default n
+	help
+	  Enables or disables logging throughout the system.
+	  Enable this option to allow the system to print log messages.
+
 endmenu

@@ -15,6 +15,7 @@
 #include <sbi/sbi_error.h>
 #include <sbi/sbi_scratch.h>
 #include <sbi/sbi_timer.h>
+#include <sbi/sbi_platform.h>
 #include <sbi_utils/timer/aclint_mtimer.h>
 
 static unsigned long mtimer_ptr_offset;
@@ -183,6 +184,7 @@ int aclint_mtimer_cold_init(struct aclint_mtimer_data *mt,
 	u32 i;
 	int rc;
 	struct sbi_scratch *scratch;
+	const struct sbi_platform *sbi = sbi_platform_thishart_ptr();
 
 	/* Sanity checks */
 	if (!mt ||
@@ -218,7 +220,7 @@ int aclint_mtimer_cold_init(struct aclint_mtimer_data *mt,
 
 	/* Update MTIMER pointer in scratch space */
 	for (i = 0; i < mt->hart_count; i++) {
-		scratch = sbi_hartid_to_scratch(mt->first_hartid + i);
+		scratch = sbi_hartid_to_scratch(sbi->hart_index2id[i]);
 		if (!scratch)
 			return SBI_ENOENT;
 		mtimer_set_hart_data_ptr(scratch, mt);

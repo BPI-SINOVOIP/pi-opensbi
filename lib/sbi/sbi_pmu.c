@@ -557,8 +557,25 @@ int sbi_pmu_ctr_stop(unsigned long cbase, unsigned long cmask,
 	return ret;
 }
 
+#ifdef CONFIG_PLATFORM_SPACEMIT_K1X
+static inline int spacemit_mhpmevent_inhibit_flags_are_invalid(uint64_t mhpmevent_val)
+{
+	uint64_t event_hw_idx = mhpmevent_val & ~MHPMEVENT_SSCOF_MASK;
+
+	/* Inhibit flags in mhpmevents of L2 cache events are invalid. */
+	if (event_hw_idx >= 184 && event_hw_idx <= 189)
+		return 1;
+
+	return 0;
+}
+#endif /* CONFIG_PLATFORM_SPACEMIT_K1X */
+
 static void pmu_update_inhibit_flags(unsigned long flags, uint64_t *mhpmevent_val)
 {
+#ifdef CONFIG_PLATFORM_SPACEMIT_K1X
+	if (spacemit_mhpmevent_inhibit_flags_are_invalid(*mhpmevent_val))
+		return;
+#endif
 	if (flags & SBI_PMU_CFG_FLAG_SET_VUINH)
 		*mhpmevent_val |= MHPMEVENT_VUINH;
 	if (flags & SBI_PMU_CFG_FLAG_SET_VSINH)
@@ -587,9 +604,16 @@ static int pmu_update_hw_mhpmevent(struct sbi_pmu_hw_event *hw_evt, int ctr_idx,
 	 * Always set the OVF bit(disable interrupts) and inhibit counting of
 	 * events in M-mode. The OVF bit should be enabled during the start call.
 	 */
-	if (sbi_hart_has_extension(scratch, SBI_HART_EXT_SSCOFPMF))
-		mhpmevent_val = (mhpmevent_val & ~MHPMEVENT_SSCOF_MASK) |
-				 MHPMEVENT_MINH | MHPMEVENT_OF;
+	if (sbi_hart_has_extension(scratch, SBI_HART_EXT_SSCOFPMF)) {
+#ifdef CONFIG_PLATFORM_SPACEMIT_K1X
+		if (spacemit_mhpmevent_inhibit_flags_are_invalid(mhpmevent_val))
+			mhpmevent_val = (mhpmevent_val & ~MHPMEVENT_SSCOF_MASK) |
+					 MHPMEVENT_OF;
+		else
+#endif
+			mhpmevent_val = (mhpmevent_val & ~MHPMEVENT_SSCOF_MASK) |
+					 MHPMEVENT_MINH | MHPMEVENT_OF;
+	}
 
 	if (pmu_dev && pmu_dev->hw_counter_disable_irq)
 		pmu_dev->hw_counter_disable_irq(ctr_idx);

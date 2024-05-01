@@ -1,0 +1,27 @@
+#!/usr/bin/make -f
+# Always set CROSS_COMPILE, which also works for native builds.
+export CROSS_COMPILE=riscv64-unknown-linux-gnu-
+export ARCH=riscv
+
+# Enable verbose build by default, disable when terse is specified.
+ifeq (,$(filter terse,$(DEB_BUILD_OPTIONS)))
+VERBOSE=1
+else
+VERBOSE=0
+endif
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	make \
+		V=$(VERBOSE) \
+		PLATFORM_DEFCONFIG=k1_defconfig \
+		PLATFORM=generic ; \
+
+override_dh_installdocs:
+	dh_installdocs --exclude=doxygen.cfg
+
+override_dh_install:
+	chmod -x build/platform/generic/firmware/fw_*.bin
+	dh_install

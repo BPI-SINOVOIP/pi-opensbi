@@ -1,0 +1,18 @@
+#!/bin/sh
+
+set -e
+
+commit="$1"
+test -z "$commit" && echo "invalid commit" && exit 1
+package=opensbi
+archive=tar.gz
+version=$(git describe "$commit" | sed -e 's,-,+,' -e 's,-g,.,' -e 's,^v,,g')
+output=../${package}_${version}.orig.${archive}
+test -f "${output}" && echo "already present: ${output}" && exit 1
+
+git archive \
+	--format=${archive} \
+	--prefix=${package}-${version}/ \
+	--output=${output} \
+	${commit} && \
+	echo "successfully created: ${output}"

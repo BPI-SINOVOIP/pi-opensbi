@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: BSD-2-Clause
+
+menu "ARM's power management framework Support"
+
+config ARM_PSCI_SUPPORT
+	bool "Support psci protocol"
+	default n
+
+if ARM_PSCI_SUPPORT
+
+config ARM_SCMI_PROTOCOL_SUPPORT
+	bool "Using r-core and arm's scmi protocol to dealing with the pwr management"
+	default n
+
+config ARM_NON_SCMI_SUPPORT
+	bool "dealing with the pwr management in Machine mode-opensbi"
+	default n
+
+endif
+
+endmenu

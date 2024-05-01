@@ -422,6 +422,7 @@ int sbi_snprintf(char *out, u32 out_sz, const char *format, ...)
 	return retval;
 }
 
+#ifdef CONFIG_ENABLE_LOGGING
 int sbi_printf(const char *format, ...)
 {
 	va_list args;
@@ -435,6 +436,12 @@ int sbi_printf(const char *format, ...)
 
 	return retval;
 }
+#else
+int sbi_printf(const char *format, ...)
+{
+	return 0;
+}
+#endif
 
 int sbi_dprintf(const char *format, ...)
 {

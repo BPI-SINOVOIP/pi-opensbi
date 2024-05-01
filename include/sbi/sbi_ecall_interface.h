@@ -42,6 +42,10 @@
 #define SBI_EXT_BASE_GET_MARCHID		0x5
 #define SBI_EXT_BASE_GET_MIMPID			0x6
 
+#if defined(CONFIG_PLATFORM_SPACEMIT_K1PRO) || defined(CONFIG_PLATFORM_SPACEMIT_K1X)
+#define SBI_EXT_BASE_FLUSH_CACHE_ALL		0x7
+#endif
+
 /* SBI function IDs for TIME extension*/
 #define SBI_EXT_TIME_SET_TIMER			0x0
 

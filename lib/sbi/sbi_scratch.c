@@ -13,6 +13,7 @@
 #include <sbi/sbi_platform.h>
 #include <sbi/sbi_scratch.h>
 #include <sbi/sbi_string.h>
+#include <spacemit/spacemit_config.h>
 
 u32 last_hartid_having_scratch = SBI_HARTMASK_MAX_BITS - 1;
 struct sbi_scratch *hartid_to_scratch_table[SBI_HARTMASK_MAX_BITS] = { 0 };
@@ -59,10 +60,13 @@ unsigned long sbi_scratch_alloc_offset(unsigned long size)
 	if (!size)
 		return 0;
 
-	size += __SIZEOF_POINTER__ - 1;
-	size &= ~((unsigned long)__SIZEOF_POINTER__ - 1);
+	size += CACHE_LINE_SIZE - 1;
+	size &= ~((unsigned long)CACHE_LINE_SIZE - 1);
 
 	spin_lock(&extra_lock);
+
+	extra_offset += CACHE_LINE_SIZE - 1;
+	extra_offset &= ~((unsigned long)CACHE_LINE_SIZE - 1);
 
 	if (SBI_SCRATCH_SIZE < (extra_offset + size))
 		goto done;

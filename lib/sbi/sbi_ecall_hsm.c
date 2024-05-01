@@ -35,8 +35,13 @@ static int sbi_ecall_hsm_handler(unsigned long extid, unsigned long funcid,
 		ret = sbi_hsm_hart_stop(scratch, true);
 		break;
 	case SBI_EXT_HSM_HART_GET_STATUS:
+#ifndef CONFIG_ARM_PSCI_SUPPORT
 		ret = sbi_hsm_hart_get_state(sbi_domain_thishart_ptr(),
 					     regs->a0);
+#else
+		ret = sbi_hsm_hart_get_psci_state(sbi_domain_thishart_ptr(),
+					     regs->a0);
+#endif
 		break;
 	case SBI_EXT_HSM_HART_SUSPEND:
 		ret = sbi_hsm_hart_suspend(scratch, regs->a0, regs->a1,

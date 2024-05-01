@@ -818,6 +818,14 @@ sbi_hart_switch_mode(unsigned long arg0, unsigned long arg1,
 		}
 	}
 
+	csr_write(CSR_TCMCFG, 1);
+	/*
+	 * update 0xfb9 csr:
+	 * bit9: for emprove fence operation
+	 * bit23 for disable vector load/store dual-issue
+	 */
+	csr_set(CSR_FEATURECTL, (1<<9)|(1<<23));
+
 	register unsigned long a0 asm("a0") = arg0;
 	register unsigned long a1 asm("a1") = arg1;
 	__asm__ __volatile__("mret" : : "r"(a0), "r"(a1));

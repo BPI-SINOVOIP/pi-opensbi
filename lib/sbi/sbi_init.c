@@ -185,6 +185,7 @@ static void sbi_boot_print_hart(struct sbi_scratch *scratch, u32 hartid)
 	sbi_hart_delegation_dump(scratch, "Boot HART ", "         ");
 }
 
+#ifndef CONFIG_ARM_PSCI_SUPPORT
 static spinlock_t coldboot_lock = SPIN_LOCK_INITIALIZER;
 static struct sbi_hartmask coldboot_wait_hmask = { 0 };
 
@@ -257,6 +258,7 @@ static void wake_coldboot_harts(struct sbi_scratch *scratch, u32 hartid)
 	/* Release coldboot lock */
 	spin_unlock(&coldboot_lock);
 }
+#endif
 
 static unsigned long entry_count_offset;
 static unsigned long init_count_offset;
@@ -392,12 +394,14 @@ static void __noreturn init_coldboot(struct sbi_scratch *scratch, u32 hartid)
 
 	sbi_boot_print_hart(scratch, hartid);
 
+#ifndef CONFIG_ARM_PSCI_SUPPORT
 	wake_coldboot_harts(scratch, hartid);
+#endif
 
 	count = sbi_scratch_offset_ptr(scratch, init_count_offset);
 	(*count)++;
 
-	sbi_hsm_hart_start_finish(scratch, hartid);
+	sbi_hsm_hart_start_finish(scratch, hartid, true);
 }
 
 static void __noreturn init_warm_startup(struct sbi_scratch *scratch,
@@ -456,7 +460,7 @@ static void __noreturn init_warm_startup(struct sbi_scratch *scratch,
 	count = sbi_scratch_offset_ptr(scratch, init_count_offset);
 	(*count)++;
 
-	sbi_hsm_hart_start_finish(scratch, hartid);
+	sbi_hsm_hart_start_finish(scratch, hartid, false);
 }
 
 static void __noreturn init_warm_resume(struct sbi_scratch *scratch,
@@ -481,7 +485,9 @@ static void __noreturn init_warmboot(struct sbi_scratch *scratch, u32 hartid)
 {
 	int hstate;
 
+#ifndef CONFIG_ARM_PSCI_SUPPORT
 	wait_for_coldboot(scratch, hartid);
+#endif
 
 	hstate = sbi_hsm_hart_get_state(sbi_domain_thishart_ptr(), hartid);
 	if (hstate < 0)

@@ -15,6 +15,7 @@
 #include <sbi/sbi_ipi.h>
 #include <sbi/sbi_scratch.h>
 #include <sbi/sbi_timer.h>
+#include <sbi/sbi_platform.h>
 #include <sbi_utils/ipi/aclint_mswi.h>
 
 static unsigned long mswi_ptr_offset;
@@ -84,6 +85,7 @@ int aclint_mswi_cold_init(struct aclint_mswi_data *mswi)
 	struct sbi_scratch *scratch;
 	unsigned long pos, region_size;
 	struct sbi_domain_memregion reg;
+	const struct sbi_platform *sbi = sbi_platform_thishart_ptr();
 
 	/* Sanity checks */
 	if (!mswi || (mswi->addr & (ACLINT_MSWI_ALIGN - 1)) ||
@@ -100,7 +102,7 @@ int aclint_mswi_cold_init(struct aclint_mswi_data *mswi)
 
 	/* Update MSWI pointer in scratch space */
 	for (i = 0; i < mswi->hart_count; i++) {
-		scratch = sbi_hartid_to_scratch(mswi->first_hartid + i);
+		scratch = sbi_hartid_to_scratch(sbi->hart_index2id[i]);
 		if (!scratch)
 			return SBI_ENOENT;
 		mswi_set_hart_data_ptr(scratch, mswi);

@@ -25,6 +25,8 @@
 #include <sbi/sbi_system.h>
 #include <sbi/sbi_timer.h>
 #include <sbi/sbi_console.h>
+#include <sbi_utils/cache/cacheflush.h>
+#include <sbi_utils/psci/psci.h>
 
 #define __sbi_hsm_hart_change_state(hdata, oldstate, newstate)		\
 ({									\
@@ -75,6 +77,21 @@ int sbi_hsm_hart_get_state(const struct sbi_domain *dom, u32 hartid)
 
 	return __sbi_hsm_hart_get_state(hartid);
 }
+
+#ifdef CONFIG_ARM_PSCI_SUPPORT
+int __sbi_hsm_hart_get_psci_state(u32 hartid)
+{
+	return psci_affinity_info(hartid, 0);
+}
+
+int sbi_hsm_hart_get_psci_state(const struct sbi_domain *dom, u32 hartid)
+{
+	if (!sbi_domain_is_assigned_hart(dom, hartid))
+		return SBI_EINVAL;
+
+	return __sbi_hsm_hart_get_psci_state(hartid);
+}
+#endif
 
 /*
  * Try to acquire the ticket for the given target hart to make sure only
@@ -137,8 +154,13 @@ int sbi_hsm_hart_interruptible_mask(const struct sbi_domain *dom,
 	return 0;
 }
 
+extern unsigned char _data_start[];
+extern unsigned char _data_end[];
+extern unsigned char _bss_start[];
+extern unsigned char _bss_end[];
+
 void __noreturn sbi_hsm_hart_start_finish(struct sbi_scratch *scratch,
-					  u32 hartid)
+					  u32 hartid, bool cool_boot)
 {
 	unsigned long next_arg1;
 	unsigned long next_addr;
@@ -155,33 +177,53 @@ void __noreturn sbi_hsm_hart_start_finish(struct sbi_scratch *scratch,
 	next_mode = scratch->next_mode;
 	hsm_start_ticket_release(hdata);
 
+	/**
+	 * clean the cache : .data/bss section & local scratch & local sp
+	 * let the second hart can view the data
+	 * */
+	if (cool_boot) {
+		csi_flush_dcache_all();
+		csi_flush_l2_cache(0);
+	}
+
 	sbi_hart_switch_mode(hartid, next_arg1, next_addr, next_mode, false);
 }
 
+#ifdef CONFIG_ARM_PSCI_SUPPORT
 static void sbi_hsm_hart_wait(struct sbi_scratch *scratch, u32 hartid)
 {
-	unsigned long saved_mie;
 	struct sbi_hsm_data *hdata = sbi_scratch_offset_ptr(scratch,
 							    hart_data_offset);
-	/* Save MIE CSR */
-	saved_mie = csr_read(CSR_MIE);
 
-	/* Set MSIE and MEIE bits to receive IPI */
-	csr_set(CSR_MIE, MIP_MSIP | MIP_MEIP);
-
-	/* Wait for state transition requested by sbi_hsm_hart_start() */
-	while (atomic_read(&hdata->state) != SBI_HSM_STATE_START_PENDING) {
-		wfi();
-	}
-
-	/* Restore MIE CSR */
-	csr_write(CSR_MIE, saved_mie);
-
-	/*
-	 * No need to clear IPI here because the sbi_ipi_init() will
-	 * clear it for current HART via sbi_platform_ipi_init().
-	 */
+	while (atomic_read(&hdata->state) != SBI_HSM_STATE_START_PENDING);
 }
+#else
+static void sbi_hsm_hart_wait(struct sbi_scratch *scratch, u32 hartid)
+{
+      unsigned long saved_mie;
+      struct sbi_hsm_data *hdata = sbi_scratch_offset_ptr(scratch,
+                                                          hart_data_offset);
+      /* Save MIE CSR */
+      saved_mie = csr_read(CSR_MIE);
+
+      /* Set MSIE and MEIE bits to receive IPI */
+      csr_set(CSR_MIE, MIP_MSIP | MIP_MEIP);
+
+      /* Wait for state transition requested by sbi_hsm_hart_start() */
+      while (atomic_read(&hdata->state) != SBI_HSM_STATE_START_PENDING) {
+              wfi();
+      }
+
+      /* Restore MIE CSR */
+      csr_write(CSR_MIE, saved_mie);
+
+      /*
+       * No need to clear IPI here because the sbi_ipi_init() will
+       * clear it for current HART via sbi_platform_ipi_init().
+       */
+}
+
+#endif
 
 const struct sbi_hsm_device *sbi_hsm_get_device(void)
 {

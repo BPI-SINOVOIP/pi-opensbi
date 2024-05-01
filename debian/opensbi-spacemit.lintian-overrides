@@ -1,0 +1,9 @@
+# These are binary firmware for use with qemu.
+opensbi binary: arch-independent-package-contains-binary-or-object *usr/lib/*/opensbi/*/fw_*.elf*
+
+# Needs to be statically linked.
+opensbi binary: statically-linked-binary *usr/lib/*/opensbi/*/fw_*.elf*
+
+# Binary firmwares being installed into multi-arch directory for
+# future-proofing if riscv32 becomes a thing.
+opensbi binary: triplet-dir-and-architecture-mismatch is for riscv64 instead of all *usr/lib/riscv64-linux-gnu/*

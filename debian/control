@@ -11,6 +11,7 @@ Rules-Requires-Root: no
 Vcs-Browser: https://salsa.debian.org/opensbi-team/opensbi
 Vcs-Git: https://salsa.debian.org/opensbi-team/opensbi.git
 Homepage: https://github.com/riscv-software-src/opensbi
+XBS-Commit-Id:
 
 Package: opensbi-spacemit
 Architecture: all

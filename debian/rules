@@ -10,8 +10,18 @@ else
 VERBOSE=0
 endif
 
+# 检查是否在 Git 仓库中，并获取 commit ID
+GIT_INSIDE := $(shell git rev-parse --is-inside-work-tree 2>/dev/null)
+ifeq ($(GIT_INSIDE),true)
+	COMMIT_ID := $(shell git rev-parse --short HEAD)
+endif
+
 %:
 	dh $@
+
+override_dh_auto_configure:
+	sed -i "s/XBS-Commit-Id:.*/XBS-Commit-Id: $(COMMIT_ID)/" debian/control
+	dh_auto_configure
 
 override_dh_auto_build:
 	make \

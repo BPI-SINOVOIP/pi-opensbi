@@ -81,10 +81,10 @@ int psci_cpu_off(void)
          * The only error cpu_off can return is E_DENIED. So check if that's
          * indeed the case.
          */
-        if (rc != PSCI_E_DENIED) {
-		sbi_printf("%s:%d, err\n", __func__, __LINE__);
-		sbi_hart_hang();
-	}
+//        if (rc != PSCI_E_DENIED) {
+//		sbi_printf("%s:%d, err\n", __func__, __LINE__);
+//		sbi_hart_hang();
+//	}
 
         return rc;
 }

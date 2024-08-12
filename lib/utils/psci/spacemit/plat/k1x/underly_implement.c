@@ -30,7 +30,8 @@ void spacemit_top_on(u_register_t mpidr)
 		(1 << CLUSTER_BIT14_OFFSET) |
 		(1 << CLUSTER_BIT30_OFFSET) |
 		(1 << CLUSTER_BIT25_OFFSET) |
-		(1 << CLUSTER_BIT13_OFFSET));
+		(1 << CLUSTER_BIT13_OFFSET) |
+		(1 << CLUSTER_VOTE_AP_SLPEN));
 	writel(value, cluster0_acpr);
 
 	value = readl(cluster1_acpr);
@@ -42,7 +43,8 @@ void spacemit_top_on(u_register_t mpidr)
 		(1 << CLUSTER_BIT14_OFFSET) |
 		(1 << CLUSTER_BIT30_OFFSET) |
 		(1 << CLUSTER_BIT25_OFFSET) |
-		(1 << CLUSTER_BIT13_OFFSET));
+		(1 << CLUSTER_BIT13_OFFSET) |
+		(1 << CLUSTER_VOTE_AP_SLPEN));
 	writel(value, cluster1_acpr);
 }
 
@@ -60,6 +62,7 @@ void spacemit_top_off(u_register_t mpidr)
 		(1 << CLUSTER_DDRSD_OFFSET) |
 		(1 << CLUSTER_APBSD_OFFSET) |
 		(1 << CLUSTER_VCXOSD_OFFSET) |
+		(1 << CLUSTER_VOTE_AP_SLPEN) |
 		(1 << CLUSTER_BIT29_OFFSET) |
 		(1 << CLUSTER_BIT14_OFFSET) |
 		(1 << CLUSTER_BIT30_OFFSET) |
@@ -72,6 +75,7 @@ void spacemit_top_off(u_register_t mpidr)
 		(1 << CLUSTER_DDRSD_OFFSET) |
 		(1 << CLUSTER_APBSD_OFFSET) |
 		(1 << CLUSTER_VCXOSD_OFFSET) |
+		(1 << CLUSTER_VOTE_AP_SLPEN) |
 		(1 << CLUSTER_BIT29_OFFSET) |
 		(1 << CLUSTER_BIT14_OFFSET) |
 		(1 << CLUSTER_BIT30_OFFSET) |
@@ -80,8 +84,15 @@ void spacemit_top_off(u_register_t mpidr)
 	writel(value, cluster1_acpr);
 
 	value = readl((unsigned int *)PMU_ACPR_UNKONW_REG);
-	value |= (1 << 2);
+	value |= (1 << 2) | (1 << 0);
 	writel(value, (unsigned int *)PMU_ACPR_UNKONW_REG);
+
+	/* enable the refbuf function which will enhance the
+	 * driving capability of the internal 26M to PLL path
+	 * */
+	value = readl((unsigned int *)0xd4090104);
+	value |= (1 << 22);
+	writel(value, (unsigned int *)0xd4090104);
 
 	/* for wakeup debug */
 	writel(0xffff, (unsigned int *)0xd4051030);
@@ -268,6 +279,82 @@ void spacemit_wakeup_cpu(u_register_t mpidr)
 			+ MPIDR_AFFLVL0_VAL(mpidr);
 
 	writel(1 << target_cpu_idx, cpu_reset_base);
+}
+
+int spacemit_core_enter_c2(u_register_t mpidr)
+{
+	unsigned int value;
+
+	/* wait the cpu enter c2 */
+	value = readl((unsigned int *)0xd4282890);
+
+	if (mpidr == 0) {
+		if (value & (1 << 6))
+			return 1;
+	} else if (mpidr == 1) {
+		if (value & (1 << 9))
+			return 1;
+	} else if (mpidr == 2) {
+		if (value & (1 << 12))
+			return 1;
+	} else if (mpidr == 3) {
+		if (value & (1 << 15))
+			return 1;
+	} else if (mpidr == 4) {
+		if (value & (1 << 22))
+			return 1;
+	} else if (mpidr == 5) {
+		if (value & (1 << 25))
+			return 1;
+	} else if (mpidr == 6) {
+		if (value & (1 << 28))
+			return 1;
+	} else if (mpidr == 7) {
+		if (value & (1 << 31))
+			return 1;
+	} else {
+		return 0;
+	}
+
+	return 0;
+}
+
+void spacemit_wait_core_enter_c2(u_register_t mpidr)
+{
+	unsigned int value;
+
+	while (1) {
+		/* wait the cpu enter c2 */
+		value = readl((unsigned int *)0xd4282890);
+
+		if (mpidr == 0) {
+			if (value & (1 << 6))
+				return;
+		} else if (mpidr == 1) {
+			if (value & (1 << 9))
+				return;
+		} else if (mpidr == 2) {
+			if (value & (1 << 12))
+				return;
+		} else if (mpidr == 3) {
+			if (value & (1 << 15))
+				return;
+		} else if (mpidr == 4) {
+			if (value & (1 << 22))
+				return;
+		} else if (mpidr == 5) {
+			if (value & (1 << 25))
+				return;
+		} else if (mpidr == 6) {
+			if (value & (1 << 28))
+				return;
+		} else if (mpidr == 7) {
+			if (value & (1 << 31))
+				return;
+		} else {
+			;
+		}
+	}
 }
 
 void spacemit_assert_cpu(u_register_t mpidr)

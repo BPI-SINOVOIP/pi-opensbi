@@ -4,9 +4,11 @@ set -e
 case "$1" in
 configure)
     target=""
-    if grep -q '^spacemit' /sys/firmware/devicetree/base/model; then
+    if grep -q '^spacemit' /sys/firmware/devicetree/base/model || grep -q '^spacemit' /sys/devices/soc0/family; then
         target="spacemit"
     else
+        echo "Neither /sys/firmware/devicetree/base/model nor /sys/devices/soc0/family starts with 'spacemit'."
+        echo "This may indicate that you are installing this package in a chroot environment."
         exit 0
     fi
 
@@ -22,23 +24,40 @@ configure)
         case $ROOT in
         "/dev/mmcblk0"*)
             OPENSBI=/dev/mmcblk0p3
+            OPENSBI_SEEK=0
             ;;
         "/dev/mmcblk2"*)
             OPENSBI=/dev/mmcblk2p3
+            OPENSBI_SEEK=0
+            ;;
+        "/dev/nvme0n1"*)
+            OPENSBI=/dev/mtdblock0
+            # 以KB为单位
+            OPENSBI_SEEK=448
             ;;
         *)
             echo "Unsupported root=$ROOT"
-            exit 0
+            exit 1
             ;;
         esac
     else
         echo "Missing root= in cmdline"
-        exit 0
+        exit 1
     fi
 
-    if [ -n "$target" ] && [ -e $OPENSBI ]; then
-        dd if=/usr/lib/riscv64-linux-gnu/opensbi/generic/fw_dynamic.itb of=$OPENSBI bs=1 && sync
-    fi
+    # 待检查文件/分区列表
+    files="/usr/lib/riscv64-linux-gnu/opensbi/generic/fw_dynamic.itb $OPENSBI"
+    for file in $files; do
+        if [ ! -e "$file" ]; then
+            # 任意不存在则退出
+            echo "Missing $file"
+            exit 1
+        fi
+    done
+
+    # 此前已经做了所有检查
+    dd if=/usr/lib/riscv64-linux-gnu/opensbi/generic/fw_dynamic.itb of=$OPENSBI seek=$OPENSBI_SEEK bs=1K && sync
+
     ;;
 esac
 

@@ -197,4 +197,33 @@ static inline void csi_flush_l2_cache(bool hw)
 		writel((1 << L2_CACHE_FLUSH_HW_TYPE_BIT_OFFSET) | (1 << L2_CACHE_FLUSH_HW_EN_BIT_OFFSET), cr);
 	}
 }
+
+static inline void csi_flush_l2_cache_hart(bool hw, int hartid)
+{
+	uintptr_t *cr =(MPIDR_AFFLVL1_VAL(hartid) == 0) ? (uintptr_t *)CLUSTER0_L2_CACHE_FLUSH_REG_BASE :
+			(uintptr_t *)CLUSTER1_L2_CACHE_FLUSH_REG_BASE;
+
+	if (!hw) {
+		writel(0x0, cr);
+		/* flush l2 cache */
+		writel(readl(cr) | (1 << L2_CACHE_FLUSH_REQUEST_BIT_OFFSET), cr);
+		/* k1pro */
+		if (L2_CACHE_FLUSH_REQUEST_BIT_OFFSET == L2_CACHE_FLUSH_DONE_BIT_OFFSET)
+			while (readl(cr) & (1 << L2_CACHE_FLUSH_DONE_BIT_OFFSET));
+		else /* k1x */ {
+			/* clear the request */
+			while (1) {
+				if ((readl(cr) & (1 << L2_CACHE_FLUSH_DONE_BIT_OFFSET)) == 0)
+					break;
+				__mdelay();
+			}
+			writel(readl(cr) & ~(1 << L2_CACHE_FLUSH_REQUEST_BIT_OFFSET), cr);
+		}
+	} else {
+		/* k1pro */
+		if (L2_CACHE_FLUSH_REQUEST_BIT_OFFSET == L2_CACHE_FLUSH_DONE_BIT_OFFSET)
+			return /* do nothing */;
+		writel((1 << L2_CACHE_FLUSH_HW_TYPE_BIT_OFFSET) | (1 << L2_CACHE_FLUSH_HW_EN_BIT_OFFSET), cr);
+	}
+}
 #endif

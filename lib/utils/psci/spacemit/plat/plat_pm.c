@@ -147,6 +147,9 @@ static void spacemit_pwr_domain_pwr_down_wfi(const psci_power_state_t *target_st
 		spin_lock(&psciipi_lock);
 
 		if (sbi_hartmask_test_hart(hartid, &psciipi_wait_hmask)) {
+
+			sbi_hartmask_clear_hart(hartid, &psciipi_wait_hmask);
+
 			sbi_ipi_raw_clear(hartid);
 			/* Restore MIE CSR */
 			csr_write(CSR_MIE, saved_mie);
@@ -225,7 +228,7 @@ static int spacemit_validate_power_state(unsigned int power_state,
 static void spacemit_pwr_domain_suspend(const psci_power_state_t *target_state)
 {
 	unsigned int hartid = current_hartid();
-	
+
         /*
          * CSS currently supports retention only at cpu level. Just return
          * as nothing is to be done for retention.
@@ -247,21 +250,26 @@ static void spacemit_pwr_domain_suspend(const psci_power_state_t *target_state)
 		/* disable the tcm */
 		csr_write(CSR_TCMCFG, 0);
 #endif
-		wake_idle_harts(NULL, hartid);
+		if (!spacemit_cluster_enter_m2(PLATFORM_MAX_CPUS_PER_CLUSTER)) {
+			wake_idle_harts(NULL, hartid);
 
-		/* D1P & D2 */
-		csi_flush_l2_cache_hart(0, 0);
-		csi_flush_l2_cache_hart(0, PLATFORM_MAX_CPUS_PER_CLUSTER);
+			csi_flush_l2_cache_hart(0, 0);
+			csi_flush_l2_cache_hart(0, PLATFORM_MAX_CPUS_PER_CLUSTER);
 
-		cci_disable_snoop_dvm_reqs(0);
-		cci_disable_snoop_dvm_reqs(1);
+			cci_disable_snoop_dvm_reqs(0);
+			cci_disable_snoop_dvm_reqs(1);
 
-		/* assert othter cpu & wait other cpu enter c2 */
-		for (u32 i = 0; i < PLATFORM_MAX_CPUS_PER_CLUSTER * PLATFORM_CLUSTER_COUNT; i++) {
-			if (i != hartid) {
-				spacemit_wait_core_enter_c2(i);
+			/* assert othter cpu & wait other cpu enter c2 */
+			for (u32 i = 0; i < PLATFORM_MAX_CPUS_PER_CLUSTER * PLATFORM_CLUSTER_COUNT; i++) {
+				if (i != hartid) {
+					spacemit_wait_core_enter_c2(i);
+				}
 			}
+		} else {
+			csi_flush_l2_cache_hart(0, 0);
+			cci_disable_snoop_dvm_reqs(0);
 		}
+
 
 		spacemit_assert_cpu(hartid);
 

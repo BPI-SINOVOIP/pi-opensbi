@@ -86,6 +86,10 @@ if PLATFORM_SPACEMIT_K1X
 	config PLATFORM_SPACEMIT_K1X_EVB
 		bool "Spacemit K1x board evb"
 		default n
+
+	config BOOTING_FROM_NO_AI_CORE
+		bool "Spacemit k1x booting from non-ai core"
+		default n
 endif
 
 source "$(OPENSBI_SRC_DIR)/platform/generic/andes/Kconfig"

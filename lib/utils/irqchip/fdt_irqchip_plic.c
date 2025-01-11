@@ -120,12 +120,21 @@ static int irqchip_plic_update_hartid_table(void *fdt, int nodeoff,
 
 		plic_set_hart_data_ptr(scratch, pd);
 		switch (hwirq) {
+#ifndef CONFIG_BOOTING_FROM_NO_AI_CORE
 		case IRQ_M_EXT:
 			plic_set_hart_mcontext(scratch, i / 2);
 			break;
 		case IRQ_S_EXT:
 			plic_set_hart_scontext(scratch, i / 2);
 			break;
+#else
+		case IRQ_M_EXT:
+			plic_set_hart_mcontext(scratch, hartid);
+			break;
+		case IRQ_S_EXT:
+			plic_set_hart_scontext(scratch, hartid);
+			break;
+#endif
 		}
 	}
 

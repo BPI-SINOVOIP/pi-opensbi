@@ -40,6 +40,7 @@ static void wakeup_other_core(void)
 	int i;
 	u32 hartid, clusterid, cluster_enabled = 0;
 	unsigned int cur_hartid = current_hartid();
+	u32 cur_clusterid = MPIDR_AFFLVL1_VAL(cur_hartid);
 	struct sbi_scratch *scratch = sbi_hartid_to_scratch(cur_hartid);
 
 #if defined(CONFIG_PLATFORM_SPACEMIT_K1X)
@@ -49,6 +50,7 @@ static void wakeup_other_core(void)
 
 	writel(scratch->warmboot_addr & 0xffffffff, (u32 *)C1_RVBADDR_LO_ADDR);
 	writel((scratch->warmboot_addr >> 32) & 0xffffffff, (u32 *)C1_RVBADDR_HI_ADDR);
+
 #elif defined(CONFIG_PLATFORM_SPACEMIT_K1PRO)
 	for (i = 0; i < platform.hart_count; i++) {
 		hartid = platform.hart_index2id[i];
@@ -87,7 +89,7 @@ static void wakeup_other_core(void)
 		/* we only enable snoop of cluster0 */
 		if (0 == (cluster_enabled & (1 << clusterid))) {
 			cluster_enabled |= 1 << clusterid;
-			if (0 == clusterid) {
+			if (cur_clusterid == clusterid) {
 				cci_enable_snoop_dvm_reqs(clusterid);
 			}
 #ifdef CONFIG_ARM_PSCI_SUPPORT
@@ -257,10 +259,22 @@ static bool spacemit_cold_boot_allowed(u32 hartid, const struct fdt_match *match
 	csr_set(CSR_ML2SETUP, 1 << (hartid % PLATFORM_MAX_CPUS_PER_CLUSTER));
 
 	/* dealing with resuming process */
-	if ((__sbi_hsm_hart_get_state(hartid) == SBI_HSM_STATE_SUSPENDED) && (hartid == 0))
+	if ((__sbi_hsm_hart_get_state(hartid) == SBI_HSM_STATE_SUSPENDED)
+#ifdef CONFIG_BOOTING_FROM_NO_AI_CORE
+			&&
+			(hartid == 0 || hartid == PLATFORM_MAX_CPUS_PER_CLUSTER)
+#else
+			&&
+			(hartid == 0)
+#endif
+			)
 		return false;
 
-	return ((hartid == 0) ? true : false);
+	return ((hartid == 0
+#ifdef CONFIG_BOOTING_FROM_NO_AI_CORE
+				|| hartid == PLATFORM_MAX_CPUS_PER_CLUSTER
+#endif
+				) ? true : false);
 }
 
 static const struct fdt_match spacemit_k1_match[] = {

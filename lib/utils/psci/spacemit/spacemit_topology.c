@@ -16,8 +16,13 @@ int plat_core_pos_by_mpidr(u_register_t mpidr)
 	unsigned int cluster = MPIDR_AFFLVL1_VAL(mpidr);
 	unsigned int core = MPIDR_AFFLVL0_VAL(mpidr);
 
+#ifndef CONFIG_BOOTING_FROM_NO_AI_CORE
 	return (cluster == 0) ? core : 
 		(plat_power_domain_tree_desc[2] + core);
+#else
+	return (cluster == 1) ? core :
+		(plat_power_domain_tree_desc[2] + core);
+#endif
 }
 
 unsigned char *plat_get_power_domain_tree_desc(void)

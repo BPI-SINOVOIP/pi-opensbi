@@ -319,6 +319,26 @@ int spacemit_core_enter_c2(u_register_t mpidr)
 	return 0;
 }
 
+int spacemit_cluster_enter_m2(u_register_t mpidr)
+{
+	unsigned int value;
+
+	/* wait the cpu enter M2 */
+	value = readl((unsigned int *)0xd4282890);
+
+	if (mpidr == 0 || mpidr == 1 || mpidr == 2 || mpidr == 3) {
+		if (value & (1 << 3))
+			return 1;
+	} else if (mpidr == 4 || mpidr == 5 || mpidr == 6 || mpidr == 7) {
+		if (value & (1 << 19))
+			return 1;
+	} else {
+		return 0;
+	}
+
+	return 0;
+}
+
 void spacemit_wait_core_enter_c2(u_register_t mpidr)
 {
 	unsigned int value;

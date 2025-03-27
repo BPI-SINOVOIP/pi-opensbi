@@ -61,7 +61,7 @@ static int sbi_ecall_legacy_handler(unsigned long extid, unsigned long funcid,
 #endif
 		break;
 	case SBI_EXT_0_1_CONSOLE_PUTCHAR:
-		sbi_putc(regs->a0);
+		sbi_putc_raw(regs->a0);
 		break;
 	case SBI_EXT_0_1_CONSOLE_GETCHAR:
 		ret = sbi_getc();

@@ -33,6 +33,7 @@ bool sbi_isprintable(char ch);
 int sbi_getc(void);
 
 void sbi_putc(char ch);
+void sbi_putc_raw(char ch);
 
 void sbi_puts(const char *str);
 

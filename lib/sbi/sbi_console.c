@@ -46,6 +46,13 @@ void sbi_putc(char ch)
 	}
 }
 
+void sbi_putc_raw(char ch)
+{
+	if (console_dev && console_dev->console_putc) {
+		console_dev->console_putc(ch);
+	}
+}
+
 static unsigned long nputs(const char *str, unsigned long len)
 {
 	unsigned long i, ret;

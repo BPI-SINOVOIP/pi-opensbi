@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Vagrant Cascadian <vagrant@debian.org>
 Uploaders: Karsten Merker <merker@debian.org>
 Build-Depends: debhelper-compat (=13),
- python3,
+ python3:any,
  u-boot-tools,
 Standards-Version: 4.6.2
 Rules-Requires-Root: no

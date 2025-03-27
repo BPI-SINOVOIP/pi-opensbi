@@ -85,7 +85,8 @@ static inline void psci_lock_get(non_cpu_pd_node_t *non_cpu_pd_node)
 
 static inline void psci_lock_release(non_cpu_pd_node_t *non_cpu_pd_node)
 {
-        spin_unlock(&psci_locks[non_cpu_pd_node->lock_index].lock);
+	spin_unlock(&psci_locks[non_cpu_pd_node->lock_index].lock);
+	csi_dcache_clean_invalid_range((uintptr_t)&psci_locks[non_cpu_pd_node->lock_index].lock, sizeof(_psci_spinlock_t));
 }
 
 /* common */
